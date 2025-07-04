@@ -1,6 +1,6 @@
 import { Module } from 'vuex'
 import { RootState } from '../index'
-import api from '../../services/api'
+import { authAPI, User } from '../../services/api'
 
 export interface AuthState {
   token: string | null
@@ -9,12 +9,6 @@ export interface AuthState {
   loading: boolean
 }
 
-export interface User {
-  id: number
-  name: string
-  email: string
-  created_at: string
-}
 
 export interface LoginCredentials {
   email: string
@@ -50,7 +44,6 @@ export const auth: Module<AuthState, RootState> = {
       state.token = token
       state.isAuthenticated = true
       localStorage.setItem('token', token)
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
     },
     
     SET_USER(state, user: User) {
@@ -62,7 +55,6 @@ export const auth: Module<AuthState, RootState> = {
       state.user = null
       state.isAuthenticated = false
       localStorage.removeItem('token')
-      delete api.defaults.headers.common['Authorization']
     },
     
     SET_LOADING(state, loading: boolean) {
@@ -74,8 +66,8 @@ export const auth: Module<AuthState, RootState> = {
     async login({ commit }, credentials: LoginCredentials) {
       try {
         commit('SET_LOADING', true)
-        const response = await api.post('/api/auth/login', credentials)
-        const { token, user } = response.data
+        const response = await authAPI.login(credentials.email, credentials.password)
+        const { token, user } = response.data.data
         
         commit('SET_TOKEN', token)
         commit('SET_USER', user)
@@ -94,8 +86,13 @@ export const auth: Module<AuthState, RootState> = {
     async register({ commit }, userData: RegisterData) {
       try {
         commit('SET_LOADING', true)
-        const response = await api.post('/api/auth/register', userData)
-        const { token, user } = response.data
+        const response = await authAPI.register(
+          userData.name,
+          userData.email,
+          userData.password,
+          userData.password_confirmation
+        )
+        const { token, user } = response.data.data
         
         commit('SET_TOKEN', token)
         commit('SET_USER', user)
@@ -104,7 +101,8 @@ export const auth: Module<AuthState, RootState> = {
       } catch (error: any) {
         return { 
           success: false, 
-          message: error.response?.data?.message || '회원가입에 실패했습니다.' 
+          message: error.response?.data?.message || '회원가입에 실패했습니다.',
+          errors: error.response?.data?.errors
         }
       } finally {
         commit('SET_LOADING', false)
@@ -113,7 +111,7 @@ export const auth: Module<AuthState, RootState> = {
 
     async logout({ commit }) {
       try {
-        await api.post('/api/auth/logout')
+        await authAPI.logout()
       } catch (error) {
         console.error('Logout error:', error)
       } finally {
@@ -125,11 +123,20 @@ export const auth: Module<AuthState, RootState> = {
       if (!state.token) return
       
       try {
-        const response = await api.get('/api/auth/user')
-        commit('SET_USER', response.data)
+        const response = await authAPI.me()
+        commit('SET_USER', response.data.data)
         commit('SET_TOKEN', state.token) // 인증 상태 유지
       } catch (error) {
         commit('LOGOUT')
+      }
+    },
+
+    // 토큰이 있으면 자동 로그인 시도
+    async initializeAuth({ commit, dispatch }) {
+      const token = localStorage.getItem('token')
+      if (token) {
+        commit('SET_TOKEN', token)
+        await dispatch('fetchUser')
       }
     }
   }

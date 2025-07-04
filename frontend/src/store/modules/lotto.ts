@@ -1,64 +1,28 @@
 import { Module } from 'vuex'
 import { RootState } from '../index'
-import api from '../../services/api'
+import { lottoAPI, LottoNumber } from '../../services/api'
 
 export interface LottoState {
-  latestNumbers: LottoResult | null
-  generatedNumbers: LottoSet[]
-  statistics: LottoStatistics | null
-  userTickets: UserTicket[]
+  latestNumbers: LatestNumbersResult | null
+  generatedNumbers: GeneratedNumber[]
+  myNumbers: LottoNumber[]
   loading: boolean
 }
 
-export interface LottoResult {
-  round: number
-  date: string
+export interface LatestNumbersResult {
+  draw_no: number
+  draw_date: string
   numbers: number[]
-  bonusNumber: number
-  totalSales: number
-  winners: WinnerInfo[]
+  bonus_number: number
+  prize_amounts: { [key: number]: number }
+  winners: { [key: number]: number }
 }
 
-export interface LottoSet {
-  id: string
-  numbers: number[]
-  generationType: 'auto' | 'semi' | 'fortune'
-  createdAt: string
-  fortuneAnalysis?: FortuneAnalysis
-}
-
-export interface LottoStatistics {
-  numberFrequency: { [key: number]: number }
-  recentPatterns: number[][]
-  hottestNumbers: number[]
-  coldestNumbers: number[]
-}
-
-export interface UserTicket {
+export interface GeneratedNumber {
   id: number
   numbers: number[]
-  round: number
-  purchaseDate: string
-  result?: TicketResult
-}
-
-export interface WinnerInfo {
-  rank: number
-  count: number
-  prize: number
-}
-
-export interface TicketResult {
-  matchCount: number
-  rank: number | null
-  prize: number
-}
-
-export interface FortuneAnalysis {
-  luckyNumbers: number[]
-  avoidNumbers: number[]
-  fortuneScore: number
-  analysis: string
+  type: 'auto' | 'semi' | 'manual' | 'fortune'
+  created_at: string
 }
 
 export const lotto: Module<LottoState, RootState> = {
@@ -67,42 +31,44 @@ export const lotto: Module<LottoState, RootState> = {
   state: {
     latestNumbers: null,
     generatedNumbers: [],
-    statistics: null,
-    userTickets: [],
+    myNumbers: [],
     loading: false
   },
 
   getters: {
     latestNumbers: (state) => state.latestNumbers,
     generatedNumbers: (state) => state.generatedNumbers,
-    statistics: (state) => state.statistics,
-    userTickets: (state) => state.userTickets,
+    myNumbers: (state) => state.myNumbers,
     isLoading: (state) => state.loading
   },
 
   mutations: {
-    SET_LATEST_NUMBERS(state, numbers: LottoResult) {
+    SET_LATEST_NUMBERS(state, numbers: LatestNumbersResult) {
       state.latestNumbers = numbers
     },
     
-    ADD_GENERATED_NUMBERS(state, numbers: LottoSet) {
-      state.generatedNumbers.unshift(numbers)
-      // 최대 10개까지만 보관
-      if (state.generatedNumbers.length > 10) {
-        state.generatedNumbers = state.generatedNumbers.slice(0, 10)
+    SET_GENERATED_NUMBERS(state, numbers: GeneratedNumber[]) {
+      state.generatedNumbers = numbers
+    },
+    
+    ADD_GENERATED_NUMBERS(state, numbers: GeneratedNumber[]) {
+      state.generatedNumbers = [...numbers, ...state.generatedNumbers]
+      // 최대 20개까지만 보관
+      if (state.generatedNumbers.length > 20) {
+        state.generatedNumbers = state.generatedNumbers.slice(0, 20)
       }
     },
     
-    SET_STATISTICS(state, statistics: LottoStatistics) {
-      state.statistics = statistics
+    SET_MY_NUMBERS(state, numbers: LottoNumber[]) {
+      state.myNumbers = numbers
     },
     
-    SET_USER_TICKETS(state, tickets: UserTicket[]) {
-      state.userTickets = tickets
+    ADD_MY_NUMBER(state, number: LottoNumber) {
+      state.myNumbers.unshift(number)
     },
     
-    ADD_USER_TICKET(state, ticket: UserTicket) {
-      state.userTickets.unshift(ticket)
+    REMOVE_MY_NUMBER(state, id: number) {
+      state.myNumbers = state.myNumbers.filter(n => n.id !== id)
     },
     
     SET_LOADING(state, loading: boolean) {
@@ -118,9 +84,9 @@ export const lotto: Module<LottoState, RootState> = {
     async fetchLatestNumbers({ commit }) {
       try {
         commit('SET_LOADING', true)
-        const response = await api.get('/api/lotto/latest')
-        commit('SET_LATEST_NUMBERS', response.data)
-        return { success: true, data: response.data }
+        const response = await lottoAPI.latest()
+        commit('SET_LATEST_NUMBERS', response.data.data)
+        return { success: true, data: response.data.data }
       } catch (error: any) {
         return { 
           success: false, 
@@ -131,12 +97,26 @@ export const lotto: Module<LottoState, RootState> = {
       }
     },
 
-    async generateNumbers({ commit }, options: { type: 'auto' | 'semi' | 'fortune', excludeNumbers?: number[], fortuneData?: any }) {
+    async generateNumbers({ commit }, options: { 
+      type: 'auto' | 'semi' | 'fortune', 
+      count?: number,
+      preferred_numbers?: number[] 
+    }) {
       try {
         commit('SET_LOADING', true)
-        const response = await api.post('/api/lotto/generate', options)
-        commit('ADD_GENERATED_NUMBERS', response.data)
-        return { success: true, data: response.data }
+        const response = await lottoAPI.generate(
+          options.type, 
+          options.count || 1, 
+          options.preferred_numbers
+        )
+        const formattedNumbers = response.data.data.numbers.map((num: any, index: number) => ({
+          id: Date.now() + index,
+          numbers: num.numbers,
+          type: num.type,
+          created_at: num.created_at
+        }))
+        commit('ADD_GENERATED_NUMBERS', formattedNumbers)
+        return { success: true, data: formattedNumbers }
       } catch (error: any) {
         return { 
           success: false, 
@@ -147,47 +127,49 @@ export const lotto: Module<LottoState, RootState> = {
       }
     },
 
-    async fetchStatistics({ commit }) {
+    async fetchMyNumbers({ commit }) {
       try {
         commit('SET_LOADING', true)
-        const response = await api.get('/api/lotto/statistics')
-        commit('SET_STATISTICS', response.data)
-        return { success: true, data: response.data }
+        const response = await lottoAPI.myNumbers()
+        commit('SET_MY_NUMBERS', response.data.data.numbers)
+        return { success: true, data: response.data.data.numbers }
       } catch (error: any) {
         return { 
           success: false, 
-          message: error.response?.data?.message || '통계 정보를 가져오는데 실패했습니다.' 
+          message: error.response?.data?.message || '내 번호를 가져오는데 실패했습니다.' 
         }
       } finally {
         commit('SET_LOADING', false)
       }
     },
 
-    async fetchUserTickets({ commit }) {
+    async saveNumber({ commit }, { numbers, type, memo }: { 
+      numbers: number[], 
+      type: string, 
+      memo?: string 
+    }) {
       try {
-        commit('SET_LOADING', true)
-        const response = await api.get('/api/user/tickets')
-        commit('SET_USER_TICKETS', response.data)
-        return { success: true, data: response.data }
+        const response = await lottoAPI.save(numbers, type, memo)
+        commit('ADD_MY_NUMBER', response.data.data.lotto_number)
+        return { success: true, data: response.data.data.lotto_number }
       } catch (error: any) {
         return { 
           success: false, 
-          message: error.response?.data?.message || '사용자 티켓을 가져오는데 실패했습니다.' 
+          message: error.response?.data?.message || '번호 저장에 실패했습니다.',
+          errors: error.response?.data?.errors
         }
-      } finally {
-        commit('SET_LOADING', false)
       }
     },
 
-    async saveTicket({ commit }, numbers: number[]) {
+    async deleteNumber({ commit }, id: number) {
       try {
-        const response = await api.post('/api/user/tickets', { numbers })
-        commit('ADD_USER_TICKET', response.data)
-        return { success: true, data: response.data }
+        await lottoAPI.delete(id)
+        commit('REMOVE_MY_NUMBER', id)
+        return { success: true }
       } catch (error: any) {
         return { 
           success: false, 
-          message: error.response?.data?.message || '티켓 저장에 실패했습니다.' 
+          message: error.response?.data?.message || '번호 삭제에 실패했습니다.' 
         }
       }
     }
