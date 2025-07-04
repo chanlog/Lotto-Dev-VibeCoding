@@ -15,7 +15,9 @@
       "Bash(cat:*)",
       "Bash(ssh:*)",
       "Bash(mkdir:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }
