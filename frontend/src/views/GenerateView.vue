@@ -159,10 +159,10 @@
         >
           <div class="flex items-center justify-between mb-2">
             <span class="text-sm text-gray-600">
-              {{ getTypeText(numberSet.generationType) }} | {{ formatDate(numberSet.createdAt) }}
+              {{ getTypeText(numberSet.type) }} | {{ formatDate(numberSet.created_at) }}
             </span>
             <button
-              @click="saveNumberSet(numberSet.numbers)"
+              @click="saveNumberSet(numberSet.numbers, numberSet.type)"
               class="text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
               저장
@@ -247,26 +247,23 @@ const generateNumbers = async () => {
     count: generateCount.value
   }
   
-  if (excludeNumbers.value.length > 0) {
-    options.excludeNumbers = excludeNumbers.value
-  }
-  
   if (selectedType.value === 'semi' && preferredNumbers.value.length > 0) {
-    options.preferredNumbers = preferredNumbers.value
+    options.preferred_numbers = preferredNumbers.value
   }
   
-  if (selectedType.value === 'fortune' && currentAnalysis.value) {
-    options.fortuneData = currentAnalysis.value
-  }
+  const result = await store.dispatch('lotto/generateNumbers', options)
   
-  // 여러 개 생성 시 반복 호출
-  for (let i = 0; i < generateCount.value; i++) {
-    await store.dispatch('lotto/generateNumbers', options)
+  if (!result.success) {
+    alert(`번호 생성에 실패했습니다: ${result.message}`)
   }
 }
 
-const saveNumberSet = async (numbers: number[]) => {
-  const result = await store.dispatch('lotto/saveTicket', numbers)
+const saveNumberSet = async (numbers: number[], type: string) => {
+  const result = await store.dispatch('lotto/saveNumber', { 
+    numbers, 
+    type, 
+    memo: `${getTypeText(type)} 생성 번호` 
+  })
   if (result.success) {
     alert('번호가 저장되었습니다!')
   } else {
@@ -290,6 +287,7 @@ const getTypeText = (type: string) => {
   const texts = {
     auto: '자동',
     semi: '반자동',
+    manual: '수동',
     fortune: '운세기반'
   }
   return texts[type as keyof typeof texts] || type
@@ -308,7 +306,7 @@ onMounted(() => {
   
   // 운세 분석 데이터 가져오기
   if (selectedType.value === 'fortune') {
-    store.dispatch('fortune/getTodaysFortune')
+    store.dispatch('fortune/fetchAnalysisHistory')
   }
 })
 </script>

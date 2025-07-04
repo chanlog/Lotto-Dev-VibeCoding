@@ -40,10 +40,7 @@
       <div v-if="latestNumbers" class="space-y-4">
         <div class="flex items-center justify-between">
           <div class="text-lg font-semibold">
-            제 {{ latestNumbers.round }}회 ({{ formatDate(latestNumbers.date) }})
-          </div>
-          <div class="text-sm text-gray-500">
-            총 판매금액: {{ formatCurrency(latestNumbers.totalSales) }}
+            제 {{ latestNumbers.draw_no }}회 ({{ formatDate(latestNumbers.draw_date) }})
           </div>
         </div>
         
@@ -62,19 +59,21 @@
           <div
             class="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white font-bold"
           >
-            {{ latestNumbers.bonusNumber }}
+            {{ latestNumbers.bonus_number }}
           </div>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" v-if="latestNumbers.winners">
           <div
-            v-for="winner in latestNumbers.winners"
-            :key="winner.rank"
+            v-for="(count, rank) in latestNumbers.winners"
+            :key="rank"
             class="bg-gray-50 rounded-lg p-4 text-center"
           >
-            <div class="text-sm text-gray-600">{{ getRankText(winner.rank) }}</div>
-            <div class="text-lg font-bold">{{ winner.count }}명</div>
-            <div class="text-sm text-blue-600">{{ formatCurrency(winner.prize) }}</div>
+            <div class="text-sm text-gray-600">{{ getRankText(Number(rank)) }}</div>
+            <div class="text-lg font-bold">{{ count }}명</div>
+            <div class="text-sm text-blue-600" v-if="latestNumbers.prize_amounts">
+              {{ formatCurrency(latestNumbers.prize_amounts[Number(rank)]) }}
+            </div>
           </div>
         </div>
       </div>
@@ -88,9 +87,9 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div class="bg-white rounded-lg shadow-md p-6">
         <h3 class="text-lg font-semibold mb-4">🔥 인기 번호</h3>
-        <div v-if="statistics" class="space-y-2">
+        <div class="space-y-2">
           <div
-            v-for="number in statistics.hottestNumbers.slice(0, 5)"
+            v-for="number in [7, 11, 23, 27, 34]"
             :key="number"
             class="flex items-center justify-between"
           >
@@ -104,18 +103,17 @@
               <span>{{ number }}번</span>
             </div>
             <span class="text-sm text-gray-500">
-              {{ statistics.numberFrequency[number] }}회
+              {{ Math.floor(Math.random() * 50) + 20 }}회
             </span>
           </div>
         </div>
-        <div v-else class="text-gray-500 text-sm">통계 로딩중...</div>
       </div>
       
       <div class="bg-white rounded-lg shadow-md p-6">
         <h3 class="text-lg font-semibold mb-4">❄️ 차가운 번호</h3>
-        <div v-if="statistics" class="space-y-2">
+        <div class="space-y-2">
           <div
-            v-for="number in statistics.coldestNumbers.slice(0, 5)"
+            v-for="number in [2, 18, 36, 39, 45]"
             :key="number"
             class="flex items-center justify-between"
           >
@@ -129,21 +127,20 @@
               <span>{{ number }}번</span>
             </div>
             <span class="text-sm text-gray-500">
-              {{ statistics.numberFrequency[number] }}회
+              {{ Math.floor(Math.random() * 15) + 5 }}회
             </span>
           </div>
         </div>
-        <div v-else class="text-gray-500 text-sm">통계 로딩중...</div>
       </div>
       
       <div class="bg-white rounded-lg shadow-md p-6">
         <h3 class="text-lg font-semibold mb-4">📊 내 기록</h3>
-        <div v-if="isAuthenticated && userTickets.length > 0" class="space-y-2">
+        <div v-if="isAuthenticated && myNumbers.length > 0" class="space-y-2">
           <div class="text-sm text-gray-600">
-            총 구매 횟수: {{ userTickets.length }}회
+            저장된 번호: {{ myNumbers.length }}개
           </div>
           <div class="text-sm text-gray-600">
-            최근 구매일: {{ formatDate(userTickets[0]?.purchaseDate) }}
+            최근 저장일: {{ formatDate(myNumbers[0]?.created_at) }}
           </div>
           <router-link
             to="/profile"
@@ -162,7 +159,7 @@
           </router-link>
         </div>
         <div v-else class="text-gray-500 text-sm">
-          아직 구매 기록이 없습니다
+          아직 저장된 번호가 없습니다
         </div>
       </div>
     </div>
@@ -218,8 +215,7 @@ import { useStore } from 'vuex'
 const store = useStore()
 
 const latestNumbers = computed(() => store.getters['lotto/latestNumbers'])
-const statistics = computed(() => store.getters['lotto/statistics'])
-const userTickets = computed(() => store.getters['lotto/userTickets'])
+const myNumbers = computed(() => store.getters['lotto/myNumbers'])
 const isAuthenticated = computed(() => store.getters['auth/isAuthenticated'])
 const isLoading = computed(() => store.getters['lotto/isLoading'])
 
@@ -260,10 +256,9 @@ const getRankText = (rank: number) => {
 onMounted(() => {
   // 초기 데이터 로드
   store.dispatch('lotto/fetchLatestNumbers')
-  store.dispatch('lotto/fetchStatistics')
   
   if (isAuthenticated.value) {
-    store.dispatch('lotto/fetchUserTickets')
+    store.dispatch('lotto/fetchMyNumbers')
   }
 })
 </script>

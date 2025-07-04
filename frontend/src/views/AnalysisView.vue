@@ -56,28 +56,17 @@
           
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              달력 종류
+              분 (선택사항)
             </label>
-            <div class="flex items-center space-x-4">
-              <label class="flex items-center">
-                <input
-                  type="radio"
-                  v-model="birthInfo.lunarCalendar"
-                  :value="false"
-                  class="form-radio text-blue-600"
-                />
-                <span class="ml-2">양력</span>
-              </label>
-              <label class="flex items-center">
-                <input
-                  type="radio"
-                  v-model="birthInfo.lunarCalendar"
-                  :value="true"
-                  class="form-radio text-blue-600"
-                />
-                <span class="ml-2">음력</span>
-              </label>
-            </div>
+            <select
+              v-model="birthInfo.minute"
+              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">모르겠음</option>
+              <option v-for="minute in [0, 15, 30, 45]" :key="minute" :value="minute">
+                {{ String(minute).padStart(2, '0') }}분
+              </option>
+            </select>
           </div>
         </div>
         
@@ -96,22 +85,22 @@
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-semibold">오늘의 운세 분석 결과</h2>
         <div class="text-sm text-gray-500">
-          {{ formatDate(currentAnalysis.analysisDate) }}
+          {{ formatDate(currentAnalysis.analysis_date) }}
         </div>
       </div>
       
       <!-- 운세 점수 -->
       <div class="mb-6">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-lg font-medium">총 운세 점수</span>
+          <span class="text-lg font-medium">재물운 점수</span>
           <span class="text-2xl font-bold text-purple-600">
-            {{ currentAnalysis.fortuneScore }}/100
+            {{ currentAnalysis.wealth_luck }}/100
           </span>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-3">
           <div 
             class="bg-purple-600 h-3 rounded-full transition-all duration-500"
-            :style="{ width: `${currentAnalysis.fortuneScore}%` }"
+            :style="{ width: `${currentAnalysis.wealth_luck}%` }"
           ></div>
         </div>
       </div>
@@ -121,43 +110,39 @@
         <div class="text-center p-4 bg-gray-50 rounded-lg">
           <div class="text-2xl mb-2">💫</div>
           <div class="text-sm text-gray-600">전체운</div>
-          <div class="font-semibold">{{ getFortuneLevel(currentAnalysis.fortuneScore) }}</div>
+          <div class="font-semibold">{{ getFortuneLevel(currentAnalysis.general_luck) }}</div>
         </div>
         <div class="text-center p-4 bg-green-50 rounded-lg">
           <div class="text-2xl mb-2">💰</div>
           <div class="text-sm text-gray-600">재물운</div>
-          <div class="font-semibold text-green-700">상</div>
+          <div class="font-semibold text-green-700">{{ getFortuneLevel(currentAnalysis.wealth_luck) }}</div>
         </div>
         <div class="text-center p-4 bg-blue-50 rounded-lg">
           <div class="text-2xl mb-2">🍀</div>
           <div class="text-sm text-gray-600">행운</div>
-          <div class="font-semibold text-blue-700">상</div>
+          <div class="font-semibold text-blue-700">{{ getFortuneLevel((currentAnalysis.general_luck + currentAnalysis.wealth_luck) / 2) }}</div>
         </div>
         <div class="text-center p-4 bg-red-50 rounded-lg">
-          <div class="text-2xl mb-2">❤️</div>
-          <div class="text-sm text-gray-600">건강운</div>
-          <div class="font-semibold text-red-700">중</div>
+          <div class="text-2xl mb-2">🎨</div>
+          <div class="text-sm text-gray-600">행운색</div>
+          <div class="font-semibold text-red-700">{{ currentAnalysis.lucky_colors?.[0] || '빨강' }}</div>
         </div>
         <div class="text-center p-4 bg-yellow-50 rounded-lg">
           <div class="text-2xl mb-2">📈</div>
-          <div class="text-sm text-gray-600">사업운</div>
-          <div class="font-semibold text-yellow-700">중</div>
+          <div class="text-sm text-gray-600">오늘의 운세</div>
+          <div class="font-semibold text-yellow-700">{{ currentAnalysis.today_fortune || '보통' }}</div>
         </div>
       </div>
       
       <!-- 세부 분석 -->
       <div class="space-y-4 mb-6">
         <div>
-          <h3 class="font-semibold text-gray-900 mb-2">💫 전체운</h3>
-          <p class="text-gray-700">{{ currentAnalysis.analysis.overall }}</p>
+          <h3 class="font-semibold text-gray-900 mb-2">📋 종합 분석</h3>
+          <p class="text-gray-700">{{ currentAnalysis.analysis_summary }}</p>
         </div>
-        <div>
-          <h3 class="font-semibold text-gray-900 mb-2">💰 재물운</h3>
-          <p class="text-gray-700">{{ currentAnalysis.analysis.wealth }}</p>
-        </div>
-        <div>
-          <h3 class="font-semibold text-gray-900 mb-2">🍀 행운</h3>
-          <p class="text-gray-700">{{ currentAnalysis.analysis.luck }}</p>
+        <div v-if="currentAnalysis.today_fortune">
+          <h3 class="font-semibold text-gray-900 mb-2">🌟 오늘의 운세</h3>
+          <p class="text-gray-700">{{ currentAnalysis.today_fortune }}</p>
         </div>
       </div>
       
@@ -167,7 +152,7 @@
           <h3 class="font-semibold text-gray-900 mb-3">🎯 오늘의 행운 번호</h3>
           <div class="flex space-x-2">
             <div
-              v-for="number in currentAnalysis.luckyNumbers"
+              v-for="number in currentAnalysis.lucky_numbers"
               :key="number"
               class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-bold"
             >
@@ -177,14 +162,14 @@
         </div>
         
         <div>
-          <h3 class="font-semibold text-gray-900 mb-3">⚠️ 피해야 할 번호</h3>
+          <h3 class="font-semibold text-gray-900 mb-3">🌈 행운 색상</h3>
           <div class="flex space-x-2">
             <div
-              v-for="number in currentAnalysis.avoidNumbers"
-              :key="number"
-              class="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white font-bold"
+              v-for="color in currentAnalysis.lucky_colors"
+              :key="color"
+              class="px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-sm font-medium"
             >
-              {{ number }}
+              {{ color }}
             </div>
           </div>
         </div>
@@ -195,7 +180,7 @@
         <h3 class="font-semibold text-purple-900 mb-3">🎰 운세 기반 추천 번호</h3>
         <div class="flex items-center space-x-2 mb-3">
           <div
-            v-for="number in currentAnalysis.recommendedNumbers"
+            v-for="number in currentAnalysis.lucky_numbers"
             :key="number"
             class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
             :class="getBallColor(number)"
@@ -221,7 +206,7 @@
       
       <!-- 유효기간 안내 -->
       <div class="text-center text-sm text-gray-500">
-        <p>이 분석 결과는 {{ currentAnalysis.validity }}까지 유효합니다.</p>
+        <p>이 분석 결과는 오늘까지 유효합니다.</p>
         <p class="mt-1">더 정확한 분석을 위해서는 태어난 시간을 입력해주세요.</p>
       </div>
     </div>
@@ -237,13 +222,13 @@
           @click="loadAnalysis(history)"
         >
           <div>
-            <div class="font-medium">{{ formatDate(history.analysisDate) }}</div>
+            <div class="font-medium">{{ formatDate(history.analysis_date) }}</div>
             <div class="text-sm text-gray-600">
-              운세 점수: {{ history.fortuneScore }}/100
+              재물운: {{ history.wealth_luck }}/100 | 전체운: {{ history.general_luck }}/100
             </div>
           </div>
           <div class="text-sm text-gray-500">
-            {{ history.validity }}
+            오늘까지 유효
           </div>
         </div>
       </div>
@@ -273,12 +258,12 @@ const birthInfo = ref<{
   date: string
   gender: 'male' | 'female' | ''
   hour: number | ''
-  lunarCalendar: boolean
+  minute: number | ''
 }>({
   date: '',
   gender: '',
   hour: '',
-  lunarCalendar: false
+  minute: ''
 })
 
 const showAllHistory = ref(false)
@@ -288,19 +273,22 @@ const analysisHistory = computed(() => store.getters['fortune/analysisHistory'])
 const isLoading = computed(() => store.getters['fortune/isLoading'])
 
 const analyzefortune = async () => {
-  const [year, month, day] = birthInfo.value.date.split('-').map(Number)
+  let birthTime: string | undefined = undefined
   
-  const birthData: BirthInfo = {
-    year,
-    month,
-    day,
-    hour: typeof birthInfo.value.hour === 'number' ? birthInfo.value.hour : 12,
-    minute: 0,
-    gender: birthInfo.value.gender as 'male' | 'female',
-    lunarCalendar: birthInfo.value.lunarCalendar
+  if (typeof birthInfo.value.hour === 'number') {
+    const hour = String(birthInfo.value.hour).padStart(2, '0')
+    const minute = typeof birthInfo.value.minute === 'number' ? 
+      String(birthInfo.value.minute).padStart(2, '0') : '00'
+    birthTime = `${hour}:${minute}`
   }
   
-  const result = await store.dispatch('fortune/analyzefortune', birthData)
+  const birthData: BirthInfo = {
+    birth_date: birthInfo.value.date,
+    birth_time: birthTime,
+    gender: birthInfo.value.gender as 'male' | 'female'
+  }
+  
+  const result = await store.dispatch('fortune/analyzeFortune', birthData)
   
   if (!result.success) {
     alert(`분석에 실패했습니다: ${result.message}`)
@@ -314,7 +302,11 @@ const generateFromFortune = () => {
 const saveRecommendedNumbers = async () => {
   if (!currentAnalysis.value) return
   
-  const result = await store.dispatch('lotto/saveTicket', currentAnalysis.value.recommendedNumbers)
+  const result = await store.dispatch('lotto/saveNumber', {
+    numbers: currentAnalysis.value.lucky_numbers,
+    type: 'fortune',
+    memo: '운세 기반 추천 번호'
+  })
   if (result.success) {
     alert('추천 번호가 저장되었습니다!')
   } else {
@@ -349,8 +341,5 @@ const getBallColor = (number: number) => {
 onMounted(() => {
   // 분석 기록 불러오기
   store.dispatch('fortune/fetchAnalysisHistory')
-  
-  // 오늘의 운세가 있다면 불러오기
-  store.dispatch('fortune/getTodaysFortune')
 })
 </script>
