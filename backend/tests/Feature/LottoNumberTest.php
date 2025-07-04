@@ -95,12 +95,14 @@ class LottoNumberTest extends TestCase
                     'message' => '로또 번호가 저장되었습니다.'
                 ]);
 
-        $this->assertDatabaseHas('lotto_numbers', [
-            'user_id' => $user->id,
-            'numbers' => json_encode([1, 7, 14, 21, 28, 35]),
-            'type' => 'manual',
-            'memo' => '행운의 번호들'
-        ]);
+        // 데이터베이스에 저장되었는지 확인
+        $lottoNumber = LottoNumber::where('user_id', $user->id)
+                                 ->where('type', 'manual')
+                                 ->where('memo', '행운의 번호들')
+                                 ->first();
+                                 
+        $this->assertNotNull($lottoNumber);
+        $this->assertEquals([1, 7, 14, 21, 28, 35], $lottoNumber->numbers);
     }
 
     /**
@@ -128,7 +130,7 @@ class LottoNumberTest extends TestCase
                         ]);
 
         $response->assertStatus(422)
-                ->assertJsonValidationErrors(['numbers']);
+                ->assertJsonValidationErrors(['numbers.5']);
 
         // 중복 번호가 있는 경우
         $response = $this->actingAs($user, 'sanctum')

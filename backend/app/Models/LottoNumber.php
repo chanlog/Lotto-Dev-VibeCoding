@@ -27,6 +27,14 @@ class LottoNumber extends Model
     ];
 
     /**
+     * numbers 속성을 JSON으로 저장할 때 공백 없이 저장
+     */
+    public function setNumbersAttribute($value)
+    {
+        $this->attributes['numbers'] = json_encode($value, JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
      * 이 로또 번호의 소유자
      */
     public function user(): BelongsTo

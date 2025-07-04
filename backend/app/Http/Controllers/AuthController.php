@@ -92,12 +92,21 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        try {
+            if ($request->user() && $request->user()->currentAccessToken()) {
+                $request->user()->currentAccessToken()->delete();
+            }
 
-        return response()->json([
-            'success' => true,
-            'message' => '로그아웃되었습니다.',
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => '로그아웃되었습니다.',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '로그아웃 중 오류가 발생했습니다.',
+            ], 500);
+        }
     }
 
     /**
