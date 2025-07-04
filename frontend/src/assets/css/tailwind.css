@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+  
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary-600 text-white hover:bg-secondary-700 focus:ring-secondary-500;
+  }
+  
+  .btn-outline {
+    @apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-primary-500;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+  }
+  
+  .dark .card {
+    @apply bg-gray-800 border-gray-700;
+  }
+  
+  .input {
+    @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500;
+  }
+  
+  .dark .input {
+    @apply border-gray-600 bg-gray-700 text-white;
+  }
+  
+  .lotto-ball {
+    @apply w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg;
+  }
+  
+  .lotto-ball-1-10 {
+    @apply bg-yellow-500;
+  }
+  
+  .lotto-ball-11-20 {
+    @apply bg-blue-500;
+  }
+  
+  .lotto-ball-21-30 {
+    @apply bg-red-500;
+  }
+  
+  .lotto-ball-31-40 {
+    @apply bg-gray-500;
+  }
+  
+  .lotto-ball-41-45 {
+    @apply bg-green-500;
+  }
+  
+  .lotto-ball-bonus {
+    @apply bg-purple-500;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .animate-number-roll {
+    animation: numberRoll 2s ease-in-out;
+  }
+  
+  @keyframes numberRoll {
+    0% {
+      transform: rotateY(0deg) scale(1);
+    }
+    50% {
+      transform: rotateY(180deg) scale(1.1);
+    }
+    100% {
+      transform: rotateY(360deg) scale(1);
+    }
+  }
+  
+  .gradient-text {
+    background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}

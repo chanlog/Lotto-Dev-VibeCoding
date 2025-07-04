@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # 테스트용 백엔드
+  test-backend:
+    build: ./backend
+    environment:
+      - APP_ENV=testing
+      - APP_DEBUG=true
+      - DB_CONNECTION=mysql
+      - DB_HOST=test-database
+      - DB_PORT=3306
+      - DB_DATABASE=lotto_test
+      - DB_USERNAME=root
+      - DB_PASSWORD=secret
+      - REDIS_HOST=test-redis
+      - REDIS_PORT=6379
+    depends_on:
+      - test-database
+      - test-redis
+    volumes:
+      - ./backend:/var/www
+      - /var/www/vendor
+
+  # 테스트용 데이터베이스
+  test-database:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: lotto_test
+      MYSQL_ROOT_PASSWORD: secret
+    volumes:
+      - test_mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+
+  # 테스트용 Redis
+  test-redis:
+    image: redis:alpine
+    volumes:
+      - test_redis_data:/data
+
+  # 테스트용 프론트엔드
+  test-frontend:
+    build: ./frontend
+    environment:
+      - NODE_ENV=test
+      - VUE_APP_API_URL=http://test-backend:8000
+    depends_on:
+      - test-backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  test_mysql_data:
+  test_redis_data:
