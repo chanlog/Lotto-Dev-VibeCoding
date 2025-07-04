@@ -58,53 +58,70 @@
       <h3 class="text-lg font-semibold mb-4">생성 옵션</h3>
       
       <!-- 제외 번호 설정 -->
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          제외할 번호 (선택사항)
-        </label>
-        <div class="grid grid-cols-9 gap-2">
-          <button
-            v-for="number in 45"
-            :key="number"
-            @click="toggleExcludeNumber(number)"
-            :class="[
-              'w-8 h-8 text-xs rounded border',
-              excludeNumbers.includes(number)
-                ? 'bg-red-500 text-white border-red-500'
-                : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
-            ]"
-          >
-            {{ number }}
-          </button>
+      <div class="mb-6">
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+          <label class="block text-lg font-bold text-red-800 mb-3 flex items-center">
+            <span class="text-2xl mr-2">🚫</span>
+            제외할 번호 (선택사항)
+          </label>
+          <p class="text-sm text-red-600 mb-3">이 번호들은 생성 시 제외됩니다</p>
+          <div class="grid grid-cols-9 gap-2">
+            <button
+              v-for="number in 45"
+              :key="number"
+              @click="toggleExcludeNumber(number)"
+              :class="[
+                'w-10 h-10 text-sm font-medium rounded-lg border-2 transition-all duration-200',
+                excludeNumbers.includes(number)
+                  ? 'bg-red-500 text-white border-red-500 shadow-lg transform scale-105'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-red-400 hover:bg-red-50'
+              ]"
+            >
+              {{ number }}
+            </button>
+          </div>
+          <p class="text-sm text-red-600 mt-3 font-medium">
+            제외된 번호: {{ excludeNumbers.length }}개 
+            <span v-if="excludeNumbers.length > 0" class="ml-2">
+              {{ excludeNumbers.sort((a, b) => a - b).join(', ') }}
+            </span>
+          </p>
         </div>
       </div>
 
       <!-- 반자동 모드 선호 번호 -->
-      <div v-if="selectedType === 'semi'" class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          선호 번호 선택 (1~3개)
-        </label>
-        <div class="grid grid-cols-9 gap-2">
-          <button
-            v-for="number in 45"
-            :key="number"
-            @click="togglePreferredNumber(number)"
-            :class="[
-              'w-8 h-8 text-xs rounded border',
-              preferredNumbers.includes(number)
-                ? 'bg-green-500 text-white border-green-500'
-                : excludeNumbers.includes(number)
-                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
-            ]"
-            :disabled="excludeNumbers.includes(number)"
-          >
-            {{ number }}
-          </button>
+      <div v-if="selectedType === 'semi'" class="mb-6">
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+          <label class="block text-lg font-bold text-green-800 mb-3 flex items-center">
+            <span class="text-2xl mr-2">⭐</span>
+            선호 번호 선택 (최대 5개)
+          </label>
+          <p class="text-sm text-green-600 mb-3">이 번호들이 우선적으로 포함됩니다</p>
+          <div class="grid grid-cols-9 gap-2">
+            <button
+              v-for="number in 45"
+              :key="number"
+              @click="togglePreferredNumber(number)"
+              :class="[
+                'w-10 h-10 text-sm font-medium rounded-lg border-2 transition-all duration-200',
+                preferredNumbers.includes(number)
+                  ? 'bg-green-500 text-white border-green-500 shadow-lg transform scale-105'
+                  : excludeNumbers.includes(number)
+                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-green-400 hover:bg-green-50'
+              ]"
+              :disabled="excludeNumbers.includes(number)"
+            >
+              {{ number }}
+            </button>
+          </div>
+          <p class="text-sm text-green-600 mt-3 font-medium">
+            선택한 번호: {{ preferredNumbers.length }}/5개
+            <span v-if="preferredNumbers.length > 0" class="ml-2">
+              {{ preferredNumbers.sort((a, b) => a - b).join(', ') }}
+            </span>
+          </p>
         </div>
-        <p class="text-sm text-gray-500 mt-2">
-          선택한 번호: {{ preferredNumbers.length }}/3개
-        </p>
       </div>
 
       <!-- 운세 기반 모드 -->
@@ -236,7 +253,7 @@ const togglePreferredNumber = (number: number) => {
   const index = preferredNumbers.value.indexOf(number)
   if (index > -1) {
     preferredNumbers.value.splice(index, 1)
-  } else if (preferredNumbers.value.length < 3) {
+  } else if (preferredNumbers.value.length < 5) {
     preferredNumbers.value.push(number)
   }
 }
