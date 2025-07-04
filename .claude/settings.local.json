@@ -14,7 +14,8 @@
       "Bash(ssh-keygen:*)",
       "Bash(cat:*)",
       "Bash(ssh:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
